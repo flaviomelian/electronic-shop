@@ -5,8 +5,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 class HomePage extends StatefulWidget {
   final String token;
+  final String userRole; // "ADMIN" o "USER"
 
-  const HomePage({super.key, required this.token});
+  const HomePage({super.key, required this.token, required this.userRole});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -18,15 +19,21 @@ class _HomePageState extends State<HomePage> {
   bool isLoading = true;
   Map<int, int> cart = {};
   late final String token;
+  late final bool isAdmin;
 
   @override
   void initState() {
     super.initState();
     token = widget.token;
+    isAdmin = widget.userRole == "ADMIN";
     fetchProducts();
   }
 
   Future<void> fetchProducts() async {
+    setState(() {
+      isLoading = true;
+    });
+
     try {
       final response = await http.get(
         Uri.parse(apiUrl),
@@ -38,8 +45,13 @@ class _HomePageState extends State<HomePage> {
       );
 
       if (response.statusCode == 200) {
+        final List<dynamic> decoded = jsonDecode(response.body);
+
         setState(() {
-          products = jsonDecode(response.body);
+          products = decoded.map((p) {
+            p['id'] = int.parse(p['id'].toString());
+            return p;
+          }).toList();
           isLoading = false;
         });
       } else {
@@ -58,14 +70,101 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void addToCart(int productId) {
+  void addToCart(dynamic productId) {
+    final int id = int.parse(productId.toString());
     setState(() {
-      if (cart.containsKey(productId)) {
-        cart[productId] = cart[productId]! + 1;
-      } else {
-        cart[productId] = 1;
-      }
+      cart[id] = (cart[id] ?? 0) + 1;
     });
+  }
+
+  Future<void> deleteProduct(dynamic productId) async {
+    final int id = int.parse(productId.toString());
+    try {
+      final response = await http.delete(
+        Uri.parse('$apiUrl/$id'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode == 200) {
+        setState(() {
+          products.removeWhere((p) => p['id'] == id);
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Producto eliminado")));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error eliminando producto: ${response.statusCode}"),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error de conexión: $e")));
+    }
+  }
+
+  Future<void> createProduct(Map<String, dynamic> productData) async {
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(productData),
+      );
+      if (response.statusCode == 201) {
+        await fetchProducts(); // recargar productos
+        Navigator.pop(context); // cerrar el dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Producto creado correctamente")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error creando producto: ${response.statusCode}"),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error de conexión: $e")));
+    }
+  }
+
+  Future<void> updateProduct(int id, Map<String, dynamic> productData) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$apiUrl/$id'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(productData),
+      );
+      if (response.statusCode == 200) {
+        await fetchProducts();
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Producto actualizado correctamente")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Error actualizando producto: ${response.statusCode}",
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error de conexión: $e")));
+    }
   }
 
   double get total {
@@ -75,123 +174,371 @@ class _HomePageState extends State<HomePage> {
         (p) => p['id'] == entry.key,
         orElse: () => {'precio': 0},
       );
-      sum += product['precio'] * entry.value;
+      sum += (product['precio'] ?? 0) * entry.value;
     }
     return sum;
   }
 
+  void showCreateProductDialog() {
+    final _formKey = GlobalKey<FormState>();
+    final nombreController = TextEditingController();
+    final descripcionController = TextEditingController();
+    final precioController = TextEditingController();
+    final stockController = TextEditingController();
+    final imagenUrlController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Crear Producto"),
+        content: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                TextFormField(
+                  controller: nombreController,
+                  decoration: const InputDecoration(labelText: "Nombre"),
+                  validator: (value) => value == null || value.isEmpty
+                      ? "Ingrese un nombre"
+                      : null,
+                ),
+                TextFormField(
+                  controller: descripcionController,
+                  decoration: const InputDecoration(labelText: "Descripción"),
+                ),
+                TextFormField(
+                  controller: precioController,
+                  decoration: const InputDecoration(labelText: "Precio"),
+                  keyboardType: TextInputType.number,
+                  validator: (value) =>
+                      value == null || double.tryParse(value) == null
+                      ? "Ingrese un precio válido"
+                      : null,
+                ),
+                TextFormField(
+                  controller: stockController,
+                  decoration: const InputDecoration(labelText: "Stock"),
+                  keyboardType: TextInputType.number,
+                  validator: (value) =>
+                      value == null || int.tryParse(value) == null
+                      ? "Ingrese un stock válido"
+                      : null,
+                ),
+                TextFormField(
+                  controller: imagenUrlController,
+                  decoration: const InputDecoration(labelText: "URL Imagen"),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (_formKey.currentState!.validate()) {
+                createProduct({
+                  "nombre": nombreController.text,
+                  "descripcion": descripcionController.text,
+                  "precio": double.parse(precioController.text),
+                  "stock": int.parse(stockController.text),
+                  "imagenUrl": imagenUrlController.text,
+                });
+              }
+            },
+            child: const Text("Crear"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void showEditProductDialog(Map<String, dynamic> product) {
+    final _formKey = GlobalKey<FormState>();
+    final nombreController = TextEditingController(text: product['nombre']);
+    final descripcionController = TextEditingController(
+      text: product['descripcion'],
+    );
+    final precioController = TextEditingController(
+      text: product['precio'].toString(),
+    );
+    final stockController = TextEditingController(
+      text: product['stock'].toString(),
+    );
+    final imagenUrlController = TextEditingController(
+      text: product['imagenUrl'],
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Editar Producto"),
+        content: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                TextFormField(
+                  controller: nombreController,
+                  decoration: const InputDecoration(labelText: "Nombre"),
+                  validator: (value) => value == null || value.isEmpty
+                      ? "Ingrese un nombre"
+                      : null,
+                ),
+                TextFormField(
+                  controller: descripcionController,
+                  decoration: const InputDecoration(labelText: "Descripción"),
+                ),
+                TextFormField(
+                  controller: precioController,
+                  decoration: const InputDecoration(labelText: "Precio"),
+                  keyboardType: TextInputType.number,
+                  validator: (value) =>
+                      value == null || double.tryParse(value) == null
+                      ? "Ingrese un precio válido"
+                      : null,
+                ),
+                TextFormField(
+                  controller: stockController,
+                  decoration: const InputDecoration(labelText: "Stock"),
+                  keyboardType: TextInputType.number,
+                  validator: (value) =>
+                      value == null || int.tryParse(value) == null
+                      ? "Ingrese un stock válido"
+                      : null,
+                ),
+                TextFormField(
+                  controller: imagenUrlController,
+                  decoration: const InputDecoration(labelText: "URL Imagen"),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (_formKey.currentState!.validate()) {
+                updateProduct(product['id'], {
+                  "nombre": nombreController.text,
+                  "descripcion": descripcionController.text,
+                  "precio": double.parse(precioController.text),
+                  "stock": int.parse(stockController.text),
+                  "imagenUrl": imagenUrlController.text,
+                });
+              }
+            },
+            child: const Text("Actualizar"),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Electronic Shop"),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : products.isEmpty
-          ? const Center(child: Text("No hay productos disponibles"))
-          : ListView.builder(
-              padding: const EdgeInsets.all(12.0),
-              itemCount: products.length,
-              itemBuilder: (context, index) {
-                final product = products[index];
-                final imageUrl = product['imagenUrl'] ?? '';
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("Electronic Shop"),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+        ),
+        body: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : products.isEmpty
+            ? const Center(child: Text("No hay productos disponibles"))
+            : SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    bottom: 90.0,
+                  ), // espacio suficiente para los FABs
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(12.0),
+                    itemCount: products.length,
+                    itemBuilder: (context, index) {
+                      final product = products[index];
+                      final imageUrl = product['imagenUrl'] ?? '';
 
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Imagen del producto usando CachedNetworkImage
-                      ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(12),
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: CachedNetworkImage(
-                          imageUrl: imageUrl,
-                          height: 450,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) =>
-                              const Center(child: CircularProgressIndicator()),
-                          errorWidget: (context, url, error) => Container(
-                            color: Colors.grey[300],
-                            child: const Center(
-                              child: Icon(
-                                Icons.image_not_supported,
-                                size: 50,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(12.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              product['nombre'] ?? 'Sin nombre',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                            ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(12),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              product['descripcion'] ?? '',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              "\$${product['precio']} - Stock: ${product['stock']}",
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  addToCart(product['id']);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        "${product['nombre']} añadido al carrito",
-                                      ),
+                              child: CachedNetworkImage(
+                                imageUrl: imageUrl,
+                                height: 250,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  color: Colors.grey[300],
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.image_not_supported,
+                                      size: 50,
+                                      color: Colors.grey,
                                     ),
-                                  );
-                                },
-                                child: const Text("Comprar"),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    product['nombre'] ?? 'Sin nombre',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    product['descripcion'] ?? '',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    "\$${product['precio']} - Stock: ${product['stock']}",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          addToCart(product['id']);
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                "${product['nombre']} añadido al carrito",
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        child: const Text("Comprar"),
+                                      ),
+                                      if (isAdmin) ...[
+                                        const SizedBox(width: 8),
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            ElevatedButton(
+                                              onPressed: () =>
+                                                  deleteProduct(product['id']),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    const Color.fromARGB(
+                                                      255,
+                                                      225,
+                                                      136,
+                                                      130,
+                                                    ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                    ),
+                                              ),
+                                              child: const Text("Eliminar"),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            ElevatedButton(
+                                              onPressed: () =>
+                                                  showEditProductDialog(
+                                                    product,
+                                                  ),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    const Color.fromARGB(
+                                                      255,
+                                                      136,
+                                                      202,
+                                                      255,
+                                                    ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                    ),
+                                              ),
+                                              child: const Text("Editar"),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                );
-              },
-            ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (_) => CartDialog(cart: cart, products: products),
-          );
-        },
-        label: Text("Total: \$${total.toStringAsFixed(2)}"),
-        icon: const Icon(Icons.shopping_cart),
+                ),
+              ),
+
+        floatingActionButton: Material(
+          type: MaterialType.transparency, // <-- esto es lo importante
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 30),
+                child: FloatingActionButton.extended(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) =>
+                          CartDialog(cart: cart, products: products),
+                    );
+                  },
+                  label: Text("Total: \$${total.toStringAsFixed(2)}"),
+                  icon: const Icon(Icons.shopping_cart),
+                  elevation: 0,
+                ),
+              ),
+              if (isAdmin)
+                Padding(
+                  padding: const EdgeInsets.only(left: 30),
+                  child: FloatingActionButton(
+                    onPressed: showCreateProductDialog,
+                    elevation: 0,
+                    child: const Icon(Icons.add),
+                  ),
+                ),
+            ],
+          ),
+        ),
+
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
     );
   }
 }

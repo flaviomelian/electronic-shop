@@ -58,10 +58,13 @@ class _LoginPageState extends State<LoginPage> {
         final data = jsonDecode(response.body);
         final token =
             data['token']; // suponemos que la API devuelve {"token": "..."}
+        final userRole =
+            data['role']; // suponemos que la API devuelve {"role": 0}
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => HomePage(token: token), // <-- pasamos token
+            builder: (_) =>
+                HomePage(token: token, userRole: userRole), // <-- pasamos token
           ),
         );
       } else {

@@ -29,10 +29,9 @@ class _SignupPageState extends State<SignupPage> {
       isLoading = true;
     });
 
-    if (passwordController.text.trim() != repeatPasswordController.text.trim()) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
+    if (passwordController.text.trim() !=
+        repeatPasswordController.text.trim()) {
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Las contraseñas no coinciden")),
       );
       setState(() {
@@ -59,10 +58,13 @@ class _SignupPageState extends State<SignupPage> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
         final token = data['token']; // Suponiendo que devuelve {"token": "..."}
+        final userRole = data['role']; // Suponiendo que devuelve {"role": 0}
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => HomePage(token: token)),
+          MaterialPageRoute(
+            builder: (_) => HomePage(token: token, userRole: userRole),
+          ),
         );
       } else {
         final error =

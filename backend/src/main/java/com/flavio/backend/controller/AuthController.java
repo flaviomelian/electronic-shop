@@ -1,7 +1,6 @@
 package com.flavio.backend.controller;
 
 import com.flavio.backend.dto.AuthRequest;
-import com.flavio.backend.dto.AuthResponse;
 import com.flavio.backend.model.User;
 import com.flavio.backend.service.AuthService;
 
@@ -23,8 +22,14 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request) {
         try {
+            User user = authService.findByEmail(request.getEmail()); // método que devuelve el User
             String token = authService.login(request.getEmail(), request.getPassword());
-            return ResponseEntity.ok(new AuthResponse(token));
+            return ResponseEntity.ok(
+                Map.of(
+                    "token", token,
+                    "role", user.getRole()
+                )
+            );
         } catch (Exception e) {
             return ResponseEntity.status(401).body(e.getMessage());
         }

@@ -34,6 +34,11 @@ public class AuthService {
         return generateToken(user);
     }
 
+    public User findByEmail(String email) throws Exception {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new Exception("Usuario no encontrado"));
+    }
+
     public String generateToken(User user) {
         // Convertir la clave secreta en un Key seguro
         Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
