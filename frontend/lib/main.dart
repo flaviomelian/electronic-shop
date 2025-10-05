@@ -36,8 +36,8 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
 
-  final String apiLoginUrl = "http://192.168.56.1:8080/api/auth/login";
-  final String apiSignupUrl = "http://192.168.56.1:8080/api/auth/signup";
+  final String apiLoginUrl = "http://192.168.1.17:8080/api/auth/login";
+  final String apiSignupUrl = "http://192.168.1.17:8080/api/auth/signup";
 
   Future<void> login() async {
     setState(() {

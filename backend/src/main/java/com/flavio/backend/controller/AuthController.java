@@ -4,6 +4,9 @@ import com.flavio.backend.dto.AuthRequest;
 import com.flavio.backend.dto.AuthResponse;
 import com.flavio.backend.model.User;
 import com.flavio.backend.service.AuthService;
+
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,9 +34,17 @@ public class AuthController {
     public ResponseEntity<?> register(@RequestBody AuthRequest request) {
         try {
             User user = authService.register(request.getEmail(), request.getName(), request.getPassword());
-            return ResponseEntity.ok(user);
+            String token = authService.generateToken(user); // ✅ ahora también genera token
+
+            return ResponseEntity.ok(
+                    Map.of(
+                            "token", token,
+                            "email", user.getEmail(),
+                            "name", user.getName(),
+                            "role", user.getRole()));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
+
 }

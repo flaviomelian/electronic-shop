@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class HomePage extends StatefulWidget {
   final String token;
@@ -12,7 +13,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final String apiUrl = "http://192.168.1.18:8080/api/productos";
+  final String apiUrl = "http://192.168.1.17:8080/api/productos"; // tu backend
   List<dynamic> products = [];
   bool isLoading = true;
   Map<int, int> cart = {};
@@ -31,7 +32,7 @@ class _HomePageState extends State<HomePage> {
         Uri.parse(apiUrl),
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json', // <-- importante para evitar 403
+          'Accept': 'application/json',
           'Authorization': 'Bearer $token',
         },
       );
@@ -41,16 +42,12 @@ class _HomePageState extends State<HomePage> {
           products = jsonDecode(response.body);
           isLoading = false;
         });
-      } else if (response.statusCode == 401 || response.statusCode == 403) {
+      } else {
         setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("No autorizado: verifica que el token sea válido."),
+          SnackBar(
+            content: Text("Error al cargar productos: ${response.statusCode}"),
           ),
-        );
-      } else {
-        throw Exception(
-          "Error al cargar productos ${response.statusCode}: ${response.body}",
         );
       }
     } catch (e) {
@@ -99,27 +96,87 @@ class _HomePageState extends State<HomePage> {
               itemCount: products.length,
               itemBuilder: (context, index) {
                 final product = products[index];
+                final imageUrl = product['imagenUrl'] ?? '';
+
                 return Card(
                   margin: const EdgeInsets.symmetric(vertical: 8),
-                  child: ListTile(
-                    leading: const Icon(Icons.devices, size: 50),
-                    title: Text(product['nombre']),
-                    subtitle: Text(
-                      "\$${product['precio']} - Stock: ${product['stock']}",
-                    ),
-                    trailing: ElevatedButton(
-                      child: const Text("Comprar"),
-                      onPressed: () {
-                        addToCart(product['id']);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              "${product['nombre']} añadido al carrito",
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Imagen del producto usando CachedNetworkImage
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(12),
+                        ),
+                        child: CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          height: 450,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) =>
+                              const Center(child: CircularProgressIndicator()),
+                          errorWidget: (context, url, error) => Container(
+                            color: Colors.grey[300],
+                            child: const Center(
+                              child: Icon(
+                                Icons.image_not_supported,
+                                size: 50,
+                                color: Colors.grey,
+                              ),
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              product['nombre'] ?? 'Sin nombre',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              product['descripcion'] ?? '',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              "\$${product['precio']} - Stock: ${product['stock']}",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  addToCart(product['id']);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        "${product['nombre']} añadido al carrito",
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: const Text("Comprar"),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -134,6 +191,7 @@ class _HomePageState extends State<HomePage> {
         label: Text("Total: \$${total.toStringAsFixed(2)}"),
         icon: const Icon(Icons.shopping_cart),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
     );
   }
 }

@@ -14,6 +14,7 @@ public class User {
     private String email;
     private String name;
     private String password;
+    private Role role = Role.USER; // Valor por defecto
 
     // Getters y Setters
     public Long getId() { return id; }
@@ -24,4 +25,11 @@ public class User {
     public void setName(String name) { this.name = name; }
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
+}
+
+enum Role {
+    USER,
+    ADMIN
 }

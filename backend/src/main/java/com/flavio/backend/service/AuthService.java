@@ -28,14 +28,13 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new Exception("Usuario no encontrado"));
 
-        if (!passwordEncoder.matches(password, user.getPassword())) {
+        if (!passwordEncoder.matches(password, user.getPassword()))
             throw new Exception("Contraseña incorrecta");
-        }
 
         return generateToken(user);
     }
 
-    private String generateToken(User user) {
+    public String generateToken(User user) {
         // Convertir la clave secreta en un Key seguro
         Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
 

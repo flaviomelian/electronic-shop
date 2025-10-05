@@ -18,6 +18,7 @@ class _SignupPageState extends State<SignupPage> {
   final emailController = TextEditingController();
   final nameController = TextEditingController();
   final passwordController = TextEditingController();
+  final repeatPasswordController = TextEditingController();
 
   bool isLoading = false;
 
@@ -27,6 +28,18 @@ class _SignupPageState extends State<SignupPage> {
     setState(() {
       isLoading = true;
     });
+
+    if (passwordController.text.trim() != repeatPasswordController.text.trim()) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+        const SnackBar(content: Text("Las contraseñas no coinciden")),
+      );
+      setState(() {
+        isLoading = false;
+      });
+      return;
+    }
 
     print('Email enviado: ' + nameController.text.trim());
     print('Nombre enviado: ' + nameController.text.trim());
@@ -110,6 +123,17 @@ class _SignupPageState extends State<SignupPage> {
               TextFormField(
                 controller: passwordController,
                 decoration: InputDecoration(labelText: 'Contraseña'),
+                obscureText: true,
+                validator: (value) {
+                  if (value == null || value.isEmpty)
+                    return 'Ingrese una contraseña';
+                  if (value.length < 6) return 'Mínimo 6 caracteres';
+                  return null;
+                },
+              ),
+              TextFormField(
+                controller: repeatPasswordController,
+                decoration: InputDecoration(labelText: 'Repita su Contraseña'),
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty)

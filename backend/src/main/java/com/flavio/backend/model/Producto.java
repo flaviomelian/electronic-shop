@@ -23,4 +23,7 @@ public class Producto {
 
     @Column(nullable = false)
     private Integer stock;
+
+    // Nueva columna para la imagen (por ejemplo, URL o nombre del archivo)
+    private String imagenUrl;
 }
