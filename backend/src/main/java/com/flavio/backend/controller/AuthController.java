@@ -30,7 +30,7 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<?> register(@RequestBody AuthRequest request) {
         try {
-            User user = authService.register(request.getEmail(), request.getPassword());
+            User user = authService.register(request.getEmail(), request.getName(), request.getPassword());
             return ResponseEntity.ok(user);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

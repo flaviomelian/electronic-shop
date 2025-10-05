@@ -47,12 +47,13 @@ public class AuthService {
                 .compact();
     }
 
-    public User register(String email, String password) throws Exception {
+    public User register(String email, String name, String password) throws Exception {
         if (userRepository.findByEmail(email).isPresent()) {
             throw new Exception("Usuario ya existe");
         }
         User user = new User();
         user.setEmail(email);
+        user.setName(name);
         user.setPassword(passwordEncoder.encode(password));
         return userRepository.save(user);
     }

@@ -12,7 +12,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final String apiUrl = "http://192.168.1.17:8080/api/productos";
+  final String apiUrl = "http://192.168.1.18:8080/api/productos";
   List<dynamic> products = [];
   bool isLoading = true;
   Map<int, int> cart = {};
@@ -45,18 +45,19 @@ class _HomePageState extends State<HomePage> {
         setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text(
-                  "No autorizado: verifica que el token sea válido.")),
+            content: Text("No autorizado: verifica que el token sea válido."),
+          ),
         );
       } else {
         throw Exception(
-            "Error al cargar productos ${response.statusCode}: ${response.body}");
+          "Error al cargar productos ${response.statusCode}: ${response.body}",
+        );
       }
     } catch (e) {
       setState(() => isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error de conexión: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error de conexión: $e")));
     }
   }
 
@@ -92,41 +93,42 @@ class _HomePageState extends State<HomePage> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : products.isEmpty
-              ? const Center(child: Text("No hay productos disponibles"))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(12.0),
-                  itemCount: products.length,
-                  itemBuilder: (context, index) {
-                    final product = products[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      child: ListTile(
-                        leading: const Icon(Icons.devices, size: 50),
-                        title: Text(product['nombre']),
-                        subtitle: Text(
-                            "\$${product['precio']} - Stock: ${product['stock']}"),
-                        trailing: ElevatedButton(
-                          child: const Text("Comprar"),
-                          onPressed: () {
-                            addToCart(product['id']);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    "${product['nombre']} añadido al carrito"),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    );
-                  },
-                ),
+          ? const Center(child: Text("No hay productos disponibles"))
+          : ListView.builder(
+              padding: const EdgeInsets.all(12.0),
+              itemCount: products.length,
+              itemBuilder: (context, index) {
+                final product = products[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  child: ListTile(
+                    leading: const Icon(Icons.devices, size: 50),
+                    title: Text(product['nombre']),
+                    subtitle: Text(
+                      "\$${product['precio']} - Stock: ${product['stock']}",
+                    ),
+                    trailing: ElevatedButton(
+                      child: const Text("Comprar"),
+                      onPressed: () {
+                        addToCart(product['id']);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              "${product['nombre']} añadido al carrito",
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           showDialog(
             context: context,
-            builder: (_) =>
-                CartDialog(cart: cart, products: products),
+            builder: (_) => CartDialog(cart: cart, products: products),
           );
         },
         label: Text("Total: \$${total.toStringAsFixed(2)}"),
@@ -158,7 +160,8 @@ class CartDialog extends StatelessWidget {
             return ListTile(
               title: Text(product['nombre']),
               subtitle: Text(
-                  "Cantidad: ${entry.value} - \$${(product['precio'] * entry.value).toStringAsFixed(2)}"),
+                "Cantidad: ${entry.value} - \$${(product['precio'] * entry.value).toStringAsFixed(2)}",
+              ),
             );
           }).toList(),
         ),

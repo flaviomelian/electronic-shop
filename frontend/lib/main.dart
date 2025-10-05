@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'pages/home.dart'; // asegúrate de usar la ruta correcta
+import 'pages/signup.dart';
 
 void main() {
   runApp(const MyApp());
@@ -35,7 +36,8 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
 
-  final String apiLoginUrl = "http://192.168.1.17:8080/api/auth/login";
+  final String apiLoginUrl = "http://192.168.56.1:8080/api/auth/login";
+  final String apiSignupUrl = "http://192.168.56.1:8080/api/auth/signup";
 
   Future<void> login() async {
     setState(() {
@@ -84,7 +86,7 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       appBar: AppBar(title: const Text("Login")),
       body: Padding(
-        padding: const EdgeInsets.all(30.0),
+        padding: const EdgeInsets.all(30),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -119,7 +121,13 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       TextButton(
                         onPressed: () {
-                          // Aquí podrías navegar a una página de registro
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  SignupPage(apiSignupUrl: apiSignupUrl),
+                            ),
+                          );
                         },
                         child: const Text("¿No tienes cuenta? Regístrate"),
                       ),
