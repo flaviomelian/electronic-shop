@@ -25,11 +25,12 @@ public class AuthController {
             User user = authService.findByEmail(request.getEmail()); // método que devuelve el User
             String token = authService.login(request.getEmail(), request.getPassword());
             return ResponseEntity.ok(
-                Map.of(
-                    "token", token,
-                    "role", user.getRole()
-                )
-            );
+                    Map.of( "id", user.getId(),
+                            "token", token,
+                            "role", user.getRole(),
+                            "username", user.getName(),
+                            "email", user.getEmail()));
+
         } catch (Exception e) {
             return ResponseEntity.status(401).body(e.getMessage());
         }

@@ -26,4 +26,10 @@ public class Producto {
 
     // Nueva columna para la imagen (por ejemplo, URL o nombre del archivo)
     private String imagenUrl;
+
+    public Producto() {}
+
+    public Producto(Long id) {
+        this.id = id;
+    }
 }

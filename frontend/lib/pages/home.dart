@@ -3,18 +3,30 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import '../components/cart_dialog.dart';
+
 class HomePage extends StatefulWidget {
   final String token;
+  final String username;
+  final String email;
+  final int userId;
   final String userRole; // "ADMIN" o "USER"
 
-  const HomePage({super.key, required this.token, required this.userRole});
+  const HomePage({
+    super.key,
+    required this.token,
+    required this.username,
+    required this.email,
+    required this.userRole,
+    required this.userId,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  final String apiUrl = "http://192.168.1.17:8080/api/productos"; // tu backend
+  final String apiUrl = "http://192.168.6.225:8080/api/productos"; // tu backend
   List<dynamic> products = [];
   bool isLoading = true;
   Map<int, int> cart = {};
@@ -439,6 +451,7 @@ class _HomePageState extends State<HomePage> {
                                               content: Text(
                                                 "${product['nombre']} añadido al carrito",
                                               ),
+                                              duration: Duration(seconds: 3),
                                             ),
                                           );
                                         },
@@ -512,11 +525,17 @@ class _HomePageState extends State<HomePage> {
               Padding(
                 padding: const EdgeInsets.only(left: 30),
                 child: FloatingActionButton.extended(
+                  heroTag: "cart_button",
                   onPressed: () {
                     showDialog(
                       context: context,
-                      builder: (_) =>
-                          CartDialog(cart: cart, products: products),
+                      builder: (_) => CartDialog(
+                        cart: cart,
+                        products: products,
+                        token: token,
+                        username: widget.username,
+                        userId: widget.userId,
+                      ),
                     );
                   },
                   label: Text("Total: \$${total.toStringAsFixed(2)}"),
@@ -539,44 +558,6 @@ class _HomePageState extends State<HomePage> {
 
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
-    );
-  }
-}
-
-class CartDialog extends StatelessWidget {
-  final Map<int, int> cart;
-  final List<dynamic> products;
-
-  const CartDialog({super.key, required this.cart, required this.products});
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text("Carrito de compras"),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: ListView(
-          shrinkWrap: true,
-          children: cart.entries.map((entry) {
-            final product = products.firstWhere(
-              (p) => p['id'] == entry.key,
-              orElse: () => {'nombre': 'Desconocido', 'precio': 0},
-            );
-            return ListTile(
-              title: Text(product['nombre']),
-              subtitle: Text(
-                "Cantidad: ${entry.value} - \$${(product['precio'] * entry.value).toStringAsFixed(2)}",
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Cerrar"),
-        ),
-      ],
     );
   }
 }

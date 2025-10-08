@@ -59,11 +59,18 @@ class _SignupPageState extends State<SignupPage> {
         final data = jsonDecode(response.body);
         final token = data['token']; // Suponiendo que devuelve {"token": "..."}
         final userRole = data['role']; // Suponiendo que devuelve {"role": 0}
+        final userId = data['id'];
 
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => HomePage(token: token, userRole: userRole),
+            builder: (_) => HomePage(
+              token: token,
+              userRole: userRole,
+              username: nameController.text.trim(),
+              email: emailController.text.trim(),
+              userId: userId,
+            ),
           ),
         );
       } else {

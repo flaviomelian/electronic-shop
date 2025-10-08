@@ -1,45 +1,63 @@
 package com.flavio.backend.controller;
 
-import java.util.List;
+import java.util.Optional;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.flavio.backend.model.Carrito;
+import com.flavio.backend.model.CarritoItem;
 import com.flavio.backend.model.Producto;
 import com.flavio.backend.service.ProductoService;
+import com.flavio.backend.service.CarritoService;
+import com.flavio.backend.repository.ProductoRepository;
+import com.flavio.backend.repository.CarritoRepository;
 
 @RestController
-@RequestMapping("/api/productos")
+@RequestMapping("/api")
 @CrossOrigin(origins = "*")
 public class ProductoController {
 
     private final ProductoService productoService;
+    private final CarritoService carritoService;
+    private final ProductoRepository productoRepository;
+    private final CarritoRepository carritoRepository;
 
-    public ProductoController(ProductoService productoService) {
+    public ProductoController(ProductoService productoService,
+                              CarritoService carritoService,
+                              ProductoRepository productoRepository,
+                              CarritoRepository carritoRepository) {
         this.productoService = productoService;
+        this.carritoService = carritoService;
+        this.productoRepository = productoRepository;
+        this.carritoRepository = carritoRepository;
     }
 
-    @GetMapping
-    public List<Producto> listar() {
-        return productoService.listarProductos();
+    // ===================== PRODUCTOS =====================
+    @GetMapping("/productos")
+    public ResponseEntity<?> listar() {
+        return ResponseEntity.ok(productoService.listarProductos());
     }
 
-    @GetMapping("/{id}")
-    public Producto obtenerPorId(@PathVariable Long id) {
-        return productoService.obtenerProductoPorId(id);
+    @GetMapping("/productos/{id}")
+    public ResponseEntity<?> obtenerPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(productoService.obtenerProductoPorId(id));
     }
 
-    @PostMapping
-    public Producto crear(@RequestBody Producto producto) {
-        return productoService.guardarProducto(producto);
+    @PostMapping("/productos")
+    public ResponseEntity<?> crear(@RequestBody Producto producto) {
+        return ResponseEntity.ok(productoService.guardarProducto(producto));
     }
 
-    @PutMapping("/{id}")
-    public Producto actualizar(@PathVariable Long id, @RequestBody Producto producto) {
-        return productoService.actualizarProducto(id, producto);
+    @PutMapping("/productos/{id}")
+    public ResponseEntity<?> actualizar(@PathVariable Long id, @RequestBody Producto producto) {
+        return ResponseEntity.ok(productoService.actualizarProducto(id, producto));
     }
 
-    @DeleteMapping("/{id}")
-    public void eliminar(@PathVariable Long id) {
+    @DeleteMapping("/productos/{id}")
+    public ResponseEntity<?> eliminar(@PathVariable Long id) {
         productoService.eliminarProducto(id);
+        return ResponseEntity.ok().build();
     }
+
 }

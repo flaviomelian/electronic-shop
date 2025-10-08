@@ -1,9 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:frontend/pages/main_screen.dart';
 import 'package:http/http.dart' as http;
 
-import 'pages/home.dart'; // asegúrate de usar la ruta correcta
+import 'pages/main_screen.dart'; // asegúrate de usar la ruta correcta
 import 'pages/signup.dart';
 
 void main() {
@@ -36,8 +37,9 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
 
-  final String apiLoginUrl = "http://192.168.1.17:8080/api/auth/login";
-  final String apiSignupUrl = "http://192.168.1.17:8080/api/auth/signup";
+  final String apiLoginUrl = "http://192.168.6.225:8080/api/auth/login";
+  final String apiSignupUrl = "http://192.168.6.225:8080/api/auth/signup";
+  final double total = 0.0;
 
   Future<void> login() async {
     setState(() {
@@ -60,11 +62,20 @@ class _LoginPageState extends State<LoginPage> {
             data['token']; // suponemos que la API devuelve {"token": "..."}
         final userRole =
             data['role']; // suponemos que la API devuelve {"role": 0}
+        final username = data['username'];
+        final email = data['email'];
+        final userId = data['id'];
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) =>
-                HomePage(token: token, userRole: userRole), // <-- pasamos token
+            builder: (_) => MainScreen(
+              token: token,
+              userRole: userRole,
+              username: username,
+              email: email,
+              total: total,
+              userId: userId,
+            ), // <-- pasamos token
           ),
         );
       } else {
