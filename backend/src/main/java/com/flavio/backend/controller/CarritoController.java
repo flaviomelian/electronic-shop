@@ -7,13 +7,13 @@ import com.flavio.backend.repository.CarritoRepository;
 import com.flavio.backend.repository.ProductoRepository;
 import com.flavio.backend.service.CarritoService;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/carrito")
@@ -23,8 +23,9 @@ public class CarritoController {
     private final ProductoRepository productoRepository;
     private final CarritoRepository carritoRepository;
 
-    public CarritoController(CarritoService carritoService, ProductoRepository productoRepository,
-            CarritoRepository carritoRepository) {
+    public CarritoController(CarritoService carritoService,
+                             ProductoRepository productoRepository,
+                             CarritoRepository carritoRepository) {
         this.carritoService = carritoService;
         this.productoRepository = productoRepository;
         this.carritoRepository = carritoRepository;
@@ -34,7 +35,6 @@ public class CarritoController {
     public ResponseEntity<?> obtenerCarrito(@PathVariable Long usuarioId) {
         Carrito carrito = carritoService.obtenerCarrito(usuarioId);
 
-        // Mapea los items a un formato más simple para Flutter
         List<Map<String, Object>> items = carrito.getItems().stream()
                 .map(item -> Map.of(
                         "productId", (Object) item.getProducto().getId(),
@@ -55,14 +55,13 @@ public class CarritoController {
         Producto producto = productoRepository.findById(productoId)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
-        // Verifica si el producto ya está en el carrito
         Optional<CarritoItem> existente = carrito.getItems().stream()
                 .filter(i -> i.getProducto().getId().equals(productoId))
                 .findFirst();
 
         if (existente.isPresent()) {
             CarritoItem item = existente.get();
-            item.setCantidad(item.getCantidad() + cantidad); // suma la cantidad
+            item.setCantidad(cantidad); // ✅ actualiza cantidad exacta
         } else {
             CarritoItem item = new CarritoItem();
             item.setProducto(producto);
@@ -76,17 +75,21 @@ public class CarritoController {
     }
 
     @DeleteMapping("/{usuarioId}/eliminar/{productoId}")
-    public ResponseEntity<?> eliminarProducto(@PathVariable Long usuarioId, @PathVariable Long productoId) {
+    public ResponseEntity<?> eliminarProducto(
+            @PathVariable Long usuarioId,
+            @PathVariable Long productoId) {
+
         Carrito carrito = carritoService.obtenerCarrito(usuarioId);
 
         boolean eliminado = carrito.getItems().removeIf(
                 item -> item.getProducto().getId().equals(productoId));
 
-        if (!eliminado) return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        if (!eliminado) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("El producto no está en el carrito");
+        }
 
         carritoRepository.save(carrito);
         return ResponseEntity.ok(carrito);
     }
-
 }

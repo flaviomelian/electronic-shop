@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 class _CartDialogState extends State<CartDialog> {
   bool isSaving = true;
   String message = "Cargando carrito...";
+  double total = 0.0;
 
   @override
   void initState() {
@@ -15,6 +16,7 @@ class _CartDialogState extends State<CartDialog> {
           setState(() {
             widget.cart.clear();
             widget.cart.addAll(fetchedCart);
+            total = _calculateTotal();
           });
         })
         .catchError((error) {
@@ -26,9 +28,21 @@ class _CartDialogState extends State<CartDialog> {
         .whenComplete(() {
           setState(() {
             isSaving = false;
-            message = "Carrito cargado ✅";
+            message = "Total: \$${total.toStringAsFixed(2)}";
           });
         });
+  }
+
+  double _calculateTotal() {
+    double totalTemp = 0.0;
+    for (var entry in widget.cart.entries) {
+      final product = widget.products.firstWhere(
+        (p) => p['id'] == entry.key,
+        orElse: () => {'precio': 0},
+      );
+      totalTemp += (product['precio']) * entry.value;
+    }
+    return totalTemp;
   }
 
   Future<Map<int, int>> fetchUserCart(String token, int userId) async {
@@ -69,8 +83,9 @@ class _CartDialogState extends State<CartDialog> {
     if (response.statusCode == 200) {
       setState(() {
         widget.cart[productId] = newQuantity;
+        total = _calculateTotal();
         isSaving = false;
-        message = "Cantidad actualizada ✅";
+        message = "Total: \$${total.toStringAsFixed(2)}";
       });
     } else {
       setState(() {
@@ -95,8 +110,9 @@ class _CartDialogState extends State<CartDialog> {
     if (response.statusCode == 200) {
       setState(() {
         widget.cart.remove(productId);
+        total = _calculateTotal();
         isSaving = false;
-        message = "Producto eliminado ✅";
+        message = "Producto eliminado ✅ (Total: \$${total.toStringAsFixed(2)})";
       });
     } else {
       setState(() {
@@ -157,7 +173,10 @@ class _CartDialogState extends State<CartDialog> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(message),
+                    Text(
+                      message,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const Divider(),
                     ...widget.cart.entries.map((entry) {
                       final product = widget.products.firstWhere(

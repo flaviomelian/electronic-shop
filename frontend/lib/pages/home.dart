@@ -32,12 +32,14 @@ class _HomePageState extends State<HomePage> {
   Map<int, int> cart = {};
   late final String token;
   late final bool isAdmin;
+  late final int userId;
 
   @override
   void initState() {
     super.initState();
     token = widget.token;
     isAdmin = widget.userRole == "ADMIN";
+    userId = widget.userId;
     fetchProducts();
   }
 
@@ -82,11 +84,46 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void addToCart(dynamic productId) {
+  void addToCart(dynamic productId) async {
     final int id = int.parse(productId.toString());
+
+    // 🔹 Actualiza localmente primero (respuesta rápida en la UI)
     setState(() {
       cart[id] = (cart[id] ?? 0) + 1;
     });
+
+    // 🔹 Luego sincroniza con el backend
+    try {
+      final response = await http.post(
+        Uri.parse(
+          'http://192.168.6.225:8080/api/carrito/$userId/agregar/$id?cantidad=${cart[id]}',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('✅ Producto $id agregado/actualizado en el backend');
+      } else {
+        debugPrint(
+          '⚠️ Error al agregar producto $id: ${response.statusCode} -> ${response.body}',
+        );
+        // Si falla, revertimos el cambio local
+        setState(() {
+          cart[id] = (cart[id]! > 1) ? cart[id]! - 1 : 0;
+          if (cart[id] == 0) cart.remove(id);
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error de red al agregar producto $id: $e');
+      // Revertimos también en caso de excepción
+      setState(() {
+        cart[id] = (cart[id]! > 1) ? cart[id]! - 1 : 0;
+        if (cart[id] == 0) cart.remove(id);
+      });
+    }
   }
 
   Future<void> deleteProduct(dynamic productId) async {
@@ -538,7 +575,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     );
                   },
-                  label: Text("Total: \$${total.toStringAsFixed(2)}"),
+                  label: Text("Carrito"),
                   icon: const Icon(Icons.shopping_cart),
                   elevation: 0,
                 ),
