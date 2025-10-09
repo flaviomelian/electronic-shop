@@ -6,6 +6,8 @@ import lombok.Data;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 @Entity
 @Data
 @Table(name = "carritos")
@@ -22,6 +24,7 @@ public class Carrito {
 
     // Relación uno a muchos con los items del carrito
     @OneToMany(mappedBy = "carrito", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<CarritoItem> items = new ArrayList<>(); // ✅ inicializada
 
     public Carrito() {}

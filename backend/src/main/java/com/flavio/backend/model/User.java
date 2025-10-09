@@ -1,5 +1,7 @@
 package com.flavio.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -16,6 +18,7 @@ public class User {
     private String password;
     private Role role = Role.USER; // Valor por defecto
     @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL)
+    @JsonIgnore
     private Carrito carrito;
 
     // Getters y Setters

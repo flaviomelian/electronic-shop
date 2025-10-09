@@ -7,8 +7,11 @@ import com.flavio.backend.repository.CarritoRepository;
 import com.flavio.backend.repository.ProductoRepository;
 import com.flavio.backend.service.CarritoService;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,10 +30,18 @@ public class CarritoController {
         this.carritoRepository = carritoRepository;
     }
 
-    @GetMapping("/carrito/{usuarioId}")
-    public ResponseEntity<Carrito> obtenerCarrito(@PathVariable Long usuarioId) {
+    @GetMapping("/{usuarioId}")
+    public ResponseEntity<?> obtenerCarrito(@PathVariable Long usuarioId) {
         Carrito carrito = carritoService.obtenerCarrito(usuarioId);
-        return ResponseEntity.ok(carrito);
+
+        // Mapea los items a un formato más simple para Flutter
+        List<Map<String, Object>> items = carrito.getItems().stream()
+                .map(item -> Map.of(
+                        "productId", (Object) item.getProducto().getId(),
+                        "cantidad", (Object) item.getCantidad()))
+                .toList();
+
+        return ResponseEntity.ok(items);
     }
 
     @PostMapping("/{usuarioId}/agregar/{productoId}")
@@ -63,4 +74,19 @@ public class CarritoController {
         carritoRepository.save(carrito);
         return ResponseEntity.ok(carrito);
     }
+
+    @DeleteMapping("/{usuarioId}/eliminar/{productoId}")
+    public ResponseEntity<?> eliminarProducto(@PathVariable Long usuarioId, @PathVariable Long productoId) {
+        Carrito carrito = carritoService.obtenerCarrito(usuarioId);
+
+        boolean eliminado = carrito.getItems().removeIf(
+                item -> item.getProducto().getId().equals(productoId));
+
+        if (!eliminado) return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("El producto no está en el carrito");
+
+        carritoRepository.save(carrito);
+        return ResponseEntity.ok(carrito);
+    }
+
 }

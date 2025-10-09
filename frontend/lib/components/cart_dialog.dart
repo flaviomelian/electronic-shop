@@ -1,57 +1,147 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:frontend/pages/home.dart';
+import 'package:frontend/pages/compra_page.dart';
 import 'package:http/http.dart' as http;
 
 class _CartDialogState extends State<CartDialog> {
   bool isSaving = true;
-  String message = "Guardando carrito...";
+  String message = "Cargando carrito...";
 
   @override
   void initState() {
     super.initState();
-    _saveCartToBackend();
+    fetchUserCart(widget.token, widget.userId)
+        .then((fetchedCart) {
+          setState(() {
+            widget.cart.clear();
+            widget.cart.addAll(fetchedCart);
+          });
+        })
+        .catchError((error) {
+          setState(() {
+            isSaving = false;
+            message = "Error cargando el carrito: $error";
+          });
+        })
+        .whenComplete(() {
+          setState(() {
+            isSaving = false;
+            message = "Carrito cargado ✅";
+          });
+        });
   }
 
-  Future<void> _saveCartToBackend() async {
-    try {
-      for (var entry in widget.cart.entries) {
-        final productId = entry.key;
-        final cantidad = entry.value;
+  Future<Map<int, int>> fetchUserCart(String token, int userId) async {
+    final response = await http.get(
+      Uri.parse('http://192.168.6.225:8080/api/carrito/$userId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    );
 
-        final response = await http.post(
-          Uri.parse(
-            'http://192.168.6.225:8080/api/carrito/${widget.userId}/agregar/$productId?cantidad=$cantidad',
-          ),
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': 'Bearer ${widget.token}',
-          },
-        );
-
-        if (response.statusCode != 200) {
-          throw Exception(
-            'Error al guardar producto $productId: ${response.statusCode}',
-          );
-        }
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      Map<int, int> cartMap = {};
+      for (var item in data) {
+        cartMap[item['productId']] = item['cantidad'];
       }
+      return cartMap;
+    } else {
+      debugPrint('⚠️ Respuesta backend: ${response.body}');
+      throw Exception('Error al cargar carrito: ${response.statusCode}');
+    }
+  }
 
+  Future<void> _updateCartItem(int productId, int newQuantity) async {
+    setState(() => isSaving = true);
+    final response = await http.post(
+      Uri.parse(
+        'http://192.168.6.225:8080/api/carrito/${widget.userId}/agregar/$productId?cantidad=$newQuantity',
+      ),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${widget.token}',
+      },
+    );
+
+    if (response.statusCode == 200) {
       setState(() {
+        widget.cart[productId] = newQuantity;
         isSaving = false;
-        message = "Carrito sincronizado con el servidor ✅";
+        message = "Cantidad actualizada ✅";
       });
-    } catch (e) {
+    } else {
       setState(() {
         isSaving = false;
-        message = "Error guardando el carrito: $e";
+        message = "Error al actualizar producto $productId";
       });
     }
+  }
+
+  Future<void> _deleteCartItem(int productId) async {
+    setState(() => isSaving = true);
+    final response = await http.delete(
+      Uri.parse(
+        'http://192.168.6.225:8080/api/carrito/${widget.userId}/eliminar/$productId',
+      ),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${widget.token}',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      setState(() {
+        widget.cart.remove(productId);
+        isSaving = false;
+        message = "Producto eliminado ✅";
+      });
+    } else {
+      setState(() {
+        isSaving = false;
+        message = "Error al eliminar producto $productId";
+      });
+    }
+  }
+
+  void _showEditDialog(int productId, int currentQuantity) {
+    final controller = TextEditingController(text: currentQuantity.toString());
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Editar cantidad"),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: "Nueva cantidad"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final newQty = int.tryParse(controller.text);
+              if (newQty != null && newQty > 0) {
+                Navigator.pop(context);
+                _updateCartItem(productId, newQty);
+              }
+            },
+            child: const Text("Guardar"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("Carrito de compras"),
+      title: const Text("🛒 Carrito de compras"),
       content: SizedBox(
         width: double.maxFinite,
         child: isSaving
@@ -63,32 +153,70 @@ class _CartDialogState extends State<CartDialog> {
                   Text(message),
                 ],
               )
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(message),
-                  const Divider(),
-                  Expanded(
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: widget.cart.entries.map((entry) {
-                        final product = widget.products.firstWhere(
-                          (p) => p['id'] == entry.key,
-                          orElse: () => {'nombre': 'Desconocido', 'precio': 0},
-                        );
-                        return ListTile(
+            : SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(message),
+                    const Divider(),
+                    ...widget.cart.entries.map((entry) {
+                      final product = widget.products.firstWhere(
+                        (p) => p['id'] == entry.key,
+                        orElse: () => {'nombre': 'Desconocido', 'precio': 0},
+                      );
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        child: ListTile(
                           title: Text(product['nombre']),
                           subtitle: Text(
                             "Cantidad: ${entry.value} - \$${(product['precio'] * entry.value).toStringAsFixed(2)}",
                           ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ],
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.edit,
+                                  color: Colors.blue,
+                                ),
+                                onPressed: () =>
+                                    _showEditDialog(entry.key, entry.value),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () => _deleteCartItem(entry.key),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
               ),
       ),
       actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CompraPage(
+                  cart: widget.cart,
+                  products: widget.products,
+                  token: widget.token,
+                  userId: widget.userId,
+                  username: widget.username,
+                ),
+              ),
+            );
+          },
+          child: const Text("Realizar compra"),
+        ),
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text("Cerrar"),
@@ -102,7 +230,7 @@ class CartDialog extends StatefulWidget {
   final Map<int, int> cart;
   final List<dynamic> products;
   final String token;
-  final String username; // o userId si lo tienes disponible
+  final String username;
   final int userId;
 
   const CartDialog({

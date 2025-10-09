@@ -1,5 +1,8 @@
 package com.flavio.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -16,9 +19,11 @@ public class CarritoItem {
 
     @ManyToOne
     @JoinColumn(name = "carrito_id")
+    @JsonBackReference
     private Carrito carrito;
 
     @ManyToOne
     @JoinColumn(name = "producto_id")
+    @JsonIgnore
     private Producto producto;
 }
