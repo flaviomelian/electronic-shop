@@ -1,5 +1,7 @@
 package com.flavio.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -19,6 +21,7 @@ public class CompraItem {
     @JoinColumn(name = "producto_id")
     private Producto producto;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "compra_id")
     private Compra compra;

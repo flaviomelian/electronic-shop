@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/pages/main_screen.dart';
 import 'package:http/http.dart' as http;
 
-import 'pages/main_screen.dart'; // asegúrate de usar la ruta correcta
+// asegúrate de usar la ruta correcta
 import 'pages/signup.dart';
 
 void main() {

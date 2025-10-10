@@ -45,6 +45,8 @@ class _MainScreenState extends State<MainScreen> {
         username: widget.username,
         email: widget.email,
         total: widget.total,
+        usuarioId: widget.userId, // Pasamos el userId para fetchCompras
+        token: widget.token, // Pasamos el token si lo necesita el backend
       ),
       const SettingsPage(),
     ];

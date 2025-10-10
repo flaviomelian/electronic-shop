@@ -1,7 +1,20 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key});
+  final String token;
+  final int userId;
+  final String initialUsername;
+  final String initialEmail;
+
+  const SettingsPage({
+    super.key,
+    required this.token,
+    required this.userId,
+    required this.initialUsername,
+    required this.initialEmail,
+  });
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -10,10 +23,59 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   final _formKey = GlobalKey<FormState>();
 
-  String username = "Usuario123";
-  String email = "usuario@example.com";
+  late String username;
+  late String email;
   String password = "";
   bool notificationsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    username = widget.initialUsername;
+    email = widget.initialEmail;
+  }
+
+  Future<void> _saveChanges() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final url = Uri.parse("http://192.168.6.225:8080/api/users/${widget.userId}");
+
+    final body = <String, String>{
+      "name": username,
+      "email": email,
+    };
+    if (password.isNotEmpty) {
+      body["password"] = password;
+    }
+
+    try {
+      final response = await http.put(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${widget.token}",
+        },
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Cambios guardados")),
+        );
+        setState(() {
+          password = ""; // limpiar campo contraseña
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: ${response.body}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,9 +120,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   if (value == null || value.isEmpty) {
                     return "Por favor ingresa un correo electrónico";
                   }
-                  if (!RegExp(
-                    r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$",
-                  ).hasMatch(value)) {
+                  if (!RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$")
+                      .hasMatch(value)) {
                     return "Ingresa un correo válido";
                   }
                   return null;
@@ -99,14 +160,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
               // Botón guardar
               ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    // Aquí pondrías la lógica para guardar los datos
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Cambios guardados")),
-                    );
-                  }
-                },
+                onPressed: _saveChanges,
                 child: const Text("Guardar cambios"),
               ),
             ],
