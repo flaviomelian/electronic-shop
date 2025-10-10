@@ -48,7 +48,12 @@ class _MainScreenState extends State<MainScreen> {
         usuarioId: widget.userId, // Pasamos el userId para fetchCompras
         token: widget.token, // Pasamos el token si lo necesita el backend
       ),
-      const SettingsPage(),
+      SettingsPage(
+        token: widget.token,
+        userId: widget.userId,
+        initialUsername: widget.username,
+        initialEmail: widget.email,
+      ),
     ];
   }
 
