@@ -11,13 +11,13 @@ class CompraPage extends StatelessWidget {
   final String username;
 
   const CompraPage({
-    Key? key,
+    super.key,
     required this.cart,
     required this.products,
     required this.token,
     required this.userId,
     required this.username,
-  }) : super(key: key);
+  });
 
   // Función para enviar la compra al backend
   Future<bool> _guardarCompra(String metodoPago) async {
@@ -34,7 +34,7 @@ class CompraPage extends StatelessWidget {
     }).toList();
 
     final response = await http.post(
-      Uri.parse('http://192.168.6.225:8080/api/compras/$userId'),
+      Uri.parse('http://192.168.1.19:8080/api/compras/$userId'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',

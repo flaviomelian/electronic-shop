@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'models.dart';
+import '../models.dart';
 
 Future<List<Compra>> fetchCompras(int usuarioId, String token) async {
   final response = await http.get(
-    Uri.parse('http://192.168.6.225:8080/api/compras/$usuarioId'),
+    Uri.parse('http://192.168.1.19:8080/api/compras/$usuarioId'),
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',

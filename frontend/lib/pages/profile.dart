@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models.dart';
-import '../fetch_compras.dart'; // donde está la función fetchCompras
+import '../services/fetch_compras.dart'; // donde está la función fetchCompras
 
 class ProfilePage extends StatefulWidget {
   final String username;

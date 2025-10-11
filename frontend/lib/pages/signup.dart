@@ -6,7 +6,7 @@ import 'dart:convert';
 class SignupPage extends StatefulWidget {
   final String apiSignupUrl;
 
-  SignupPage({required this.apiSignupUrl});
+  const SignupPage({super.key, required this.apiSignupUrl});
 
   @override
   _SignupPageState createState() => _SignupPageState();
@@ -40,9 +40,9 @@ class _SignupPageState extends State<SignupPage> {
       return;
     }
 
-    print('Email enviado: ' + nameController.text.trim());
-    print('Nombre enviado: ' + nameController.text.trim());
-    print('Password enviado: ' + passwordController.text.trim());
+    print('Email enviado: ${nameController.text.trim()}');
+    print('Nombre enviado: ${nameController.text.trim()}');
+    print('Password enviado: ${passwordController.text.trim()}');
 
     try {
       final response = await http.post(
@@ -124,8 +124,9 @@ class _SignupPageState extends State<SignupPage> {
                 controller: nameController,
                 decoration: InputDecoration(labelText: 'Nombre'),
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Ingrese su nombre';
+                  }
                   return null;
                 },
               ),
@@ -134,8 +135,9 @@ class _SignupPageState extends State<SignupPage> {
                 decoration: InputDecoration(labelText: 'Contraseña'),
                 obscureText: true,
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Ingrese una contraseña';
+                  }
                   if (value.length < 6) return 'Mínimo 6 caracteres';
                   return null;
                 },
@@ -145,8 +147,9 @@ class _SignupPageState extends State<SignupPage> {
                 decoration: InputDecoration(labelText: 'Repita su Contraseña'),
                 obscureText: true,
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Ingrese una contraseña';
+                  }
                   if (value.length < 6) return 'Mínimo 6 caracteres';
                   return null;
                 },

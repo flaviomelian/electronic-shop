@@ -26,7 +26,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final String apiUrl = "http://192.168.6.225:8080/api/productos"; // tu backend
+  final String apiUrl = "http://192.168.1.19:8080/api/productos"; // tu backend
   List<dynamic> products = [];
   bool isLoading = true;
   Map<int, int> cart = {};
@@ -96,7 +96,7 @@ class _HomePageState extends State<HomePage> {
     try {
       final response = await http.post(
         Uri.parse(
-          'http://192.168.6.225:8080/api/carrito/$userId/agregar/$id?cantidad=${cart[id]}',
+          'http://192.168.1.19:8080/api/carrito/$userId/agregar/$id?cantidad=${cart[id]}',
         ),
         headers: {
           'Content-Type': 'application/json',
@@ -229,7 +229,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void showCreateProductDialog() {
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
     final nombreController = TextEditingController();
     final descripcionController = TextEditingController();
     final precioController = TextEditingController();
@@ -242,7 +242,7 @@ class _HomePageState extends State<HomePage> {
         title: const Text("Crear Producto"),
         content: SingleChildScrollView(
           child: Form(
-            key: _formKey,
+            key: formKey,
             child: Column(
               children: [
                 TextFormField(
@@ -289,7 +289,7 @@ class _HomePageState extends State<HomePage> {
           ),
           ElevatedButton(
             onPressed: () {
-              if (_formKey.currentState!.validate()) {
+              if (formKey.currentState!.validate()) {
                 createProduct({
                   "nombre": nombreController.text,
                   "descripcion": descripcionController.text,
@@ -307,7 +307,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void showEditProductDialog(Map<String, dynamic> product) {
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
     final nombreController = TextEditingController(text: product['nombre']);
     final descripcionController = TextEditingController(
       text: product['descripcion'],
@@ -328,7 +328,7 @@ class _HomePageState extends State<HomePage> {
         title: const Text("Editar Producto"),
         content: SingleChildScrollView(
           child: Form(
-            key: _formKey,
+            key: formKey,
             child: Column(
               children: [
                 TextFormField(
@@ -375,7 +375,7 @@ class _HomePageState extends State<HomePage> {
           ),
           ElevatedButton(
             onPressed: () {
-              if (_formKey.currentState!.validate()) {
+              if (formKey.currentState!.validate()) {
                 updateProduct(product['id'], {
                   "nombre": nombreController.text,
                   "descripcion": descripcionController.text,

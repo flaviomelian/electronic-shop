@@ -1,13 +1,16 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // ✅ Importa dotenv
 import 'package:frontend/pages/main_screen.dart';
 import 'package:http/http.dart' as http;
-
-// asegúrate de usar la ruta correcta
 import 'pages/signup.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // ✅ Cargar el archivo .env
+  await dotenv.load(fileName: ".env");
+
   runApp(const MyApp());
 }
 
@@ -37,8 +40,9 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
 
-  final String apiLoginUrl = "http://192.168.6.225:8080/api/auth/login";
-  final String apiSignupUrl = "http://192.168.6.225:8080/api/auth/signup";
+  // ✅ Carga las variables del .env
+  final String apiLoginUrl = dotenv.env['API_LOGIN_URL'] ?? '';
+  final String apiSignupUrl = dotenv.env['API_SIGNUP_URL'] ?? '';
   final double total = 0.0;
 
   Future<void> login() async {
@@ -58,13 +62,12 @@ class _LoginPageState extends State<LoginPage> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final token =
-            data['token']; // suponemos que la API devuelve {"token": "..."}
-        final userRole =
-            data['role']; // suponemos que la API devuelve {"role": 0}
+        final token = data['token'];
+        final userRole = data['role'];
         final username = data['username'];
         final email = data['email'];
         final userId = data['id'];
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -75,7 +78,7 @@ class _LoginPageState extends State<LoginPage> {
               email: email,
               total: total,
               userId: userId,
-            ), // <-- pasamos token
+            ),
           ),
         );
       } else {
@@ -104,7 +107,6 @@ class _LoginPageState extends State<LoginPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Email con icono de usuario
             TextField(
               controller: emailController,
               decoration: const InputDecoration(
@@ -114,7 +116,6 @@ class _LoginPageState extends State<LoginPage> {
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 12),
-            // Password con icono de candado
             TextField(
               controller: passwordController,
               decoration: const InputDecoration(

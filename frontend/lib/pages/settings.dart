@@ -38,12 +38,9 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _saveChanges() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final url = Uri.parse("http://192.168.6.225:8080/api/users/${widget.userId}");
+    final url = Uri.parse("http://192.168.1.19:8080/api/users/${widget.userId}");
 
-    final body = <String, String>{
-      "name": username,
-      "email": email,
-    };
+    final body = <String, String>{"name": username, "email": email};
     if (password.isNotEmpty) {
       body["password"] = password;
     }
@@ -59,21 +56,21 @@ class _SettingsPageState extends State<SettingsPage> {
       );
 
       if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Cambios guardados")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Cambios guardados")));
         setState(() {
           password = ""; // limpiar campo contraseña
         });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: ${response.body}")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error: ${response.body}")));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
@@ -120,8 +117,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   if (value == null || value.isEmpty) {
                     return "Por favor ingresa un correo electrónico";
                   }
-                  if (!RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$")
-                      .hasMatch(value)) {
+                  if (!RegExp(
+                    r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$",
+                  ).hasMatch(value)) {
                     return "Ingresa un correo válido";
                   }
                   return null;
